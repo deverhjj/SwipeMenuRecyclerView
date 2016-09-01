@@ -1,0 +1,202 @@
+[
+    {
+        "outputFile": "D:\\Android-Studio\\MyOpenProjects\\SwipeMenuRecyclerView\\library\\build\\intermediates\\res\\merged\\release\\values\\values.xml",
+        "map": [
+            {
+                "to": {
+                    "startLine": 5,
+                    "startColumn": 4,
+                    "startOffset": 1080,
+                    "endColumn": 74,
+                    "endOffset": 1150
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyOpenProjects\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 3,
+                        "startColumn": 4,
+                        "startOffset": 327,
+                        "endColumn": 74,
+                        "endOffset": 397
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 6,
+                    "startColumn": 4,
+                    "startOffset": 1155,
+                    "endColumn": 75,
+                    "endOffset": 1226
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyOpenProjects\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 4,
+                        "startColumn": 4,
+                        "startOffset": 402,
+                        "endColumn": 75,
+                        "endOffset": 473
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 7,
+                    "startColumn": 4,
+                    "startOffset": 1231,
+                    "endColumn": 71,
+                    "endOffset": 1298
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyOpenProjects\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 5,
+                        "startColumn": 4,
+                        "startOffset": 478,
+                        "endColumn": 71,
+                        "endOffset": 545
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 8,
+                    "startColumn": 4,
+                    "startOffset": 1303,
+                    "endColumn": 65,
+                    "endOffset": 1364
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyOpenProjects\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 6,
+                        "startColumn": 4,
+                        "startOffset": 550,
+                        "endColumn": 65,
+                        "endOffset": 611
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 9,
+                    "startColumn": 4,
+                    "startOffset": 1369,
+                    "endColumn": 44,
+                    "endOffset": 1409
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyOpenProjects\\SwipeMenuRecyclerView\\library\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 1,
+                        "startColumn": 4,
+                        "startOffset": 17,
+                        "endColumn": 44,
+                        "endOffset": 57
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "outputFile": "D:\\Android-Studio\\MyLibs\\SwipeMenuRecyclerView\\library\\build\\intermediates\\res\\merged\\release\\values\\values.xml",
+        "map": [
+            {
+                "to": {
+                    "startLine": 5,
+                    "startColumn": 4,
+                    "startOffset": 1080,
+                    "endColumn": 74,
+                    "endOffset": 1150
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyLibs\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 3,
+                        "startColumn": 4,
+                        "startOffset": 327,
+                        "endColumn": 74,
+                        "endOffset": 397
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 6,
+                    "startColumn": 4,
+                    "startOffset": 1155,
+                    "endColumn": 75,
+                    "endOffset": 1226
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyLibs\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 4,
+                        "startColumn": 4,
+                        "startOffset": 402,
+                        "endColumn": 75,
+                        "endOffset": 473
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 7,
+                    "startColumn": 4,
+                    "startOffset": 1231,
+                    "endColumn": 71,
+                    "endOffset": 1298
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyLibs\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 5,
+                        "startColumn": 4,
+                        "startOffset": 478,
+                        "endColumn": 71,
+                        "endOffset": 545
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 8,
+                    "startColumn": 4,
+                    "startOffset": 1303,
+                    "endColumn": 65,
+                    "endOffset": 1364
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyLibs\\SwipeMenuRecyclerView\\library\\build\\intermediates\\exploded-aar\\com.android.support\\recyclerview-v7\\23.3.0\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 6,
+                        "startColumn": 4,
+                        "startOffset": 550,
+                        "endColumn": 65,
+                        "endOffset": 611
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 9,
+                    "startColumn": 4,
+                    "startOffset": 1369,
+                    "endColumn": 44,
+                    "endOffset": 1409
+                },
+                "from": {
+                    "file": "D:\\Android-Studio\\MyLibs\\SwipeMenuRecyclerView\\library\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 1,
+                        "startColumn": 4,
+                        "startOffset": 17,
+                        "endColumn": 44,
+                        "endOffset": 57
+                    }
+                }
+            }
+        ]
+    }
+]

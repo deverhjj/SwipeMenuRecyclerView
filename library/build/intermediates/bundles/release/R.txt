@@ -1,0 +1,35 @@
+int attr layoutManager 0x7f010000
+int attr layout_gravity 0x7f010004
+int attr reverseLayout 0x7f010002
+int attr spanCount 0x7f010001
+int attr stackFromEnd 0x7f010003
+int dimen item_touch_helper_max_drag_scroll_per_frame 0x7f020000
+int dimen item_touch_helper_swipe_escape_max_velocity 0x7f020001
+int dimen item_touch_helper_swipe_escape_velocity 0x7f020002
+int id above 0x7f030001
+int id below 0x7f030002
+int id bottom 0x7f030003
+int id center 0x7f030004
+int id center_horizontal 0x7f030005
+int id center_vertical 0x7f030006
+int id clip_horizontal 0x7f030007
+int id clip_vertical 0x7f030008
+int id end 0x7f030009
+int id fill 0x7f03000a
+int id fill_horizontal 0x7f03000b
+int id fill_vertical 0x7f03000c
+int id item_touch_helper_previous_elevation 0x7f030000
+int id left 0x7f03000d
+int id right 0x7f03000e
+int id start 0x7f03000f
+int id top 0x7f030010
+int string app_name 0x7f040000
+int[] styleable RecyclerView { 0x010100c4, 0x7f010000, 0x7f010001, 0x7f010002, 0x7f010003 }
+int styleable RecyclerView_android_orientation 0
+int styleable RecyclerView_layoutManager 1
+int styleable RecyclerView_reverseLayout 3
+int styleable RecyclerView_spanCount 2
+int styleable RecyclerView_stackFromEnd 4
+int[] styleable SwipeMenuLayout { }
+int[] styleable SwipeMenuLayout_Layout { 0x7f010004 }
+int styleable SwipeMenuLayout_Layout_layout_gravity 0
