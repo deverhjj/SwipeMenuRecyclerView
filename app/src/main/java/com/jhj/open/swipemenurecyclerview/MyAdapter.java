@@ -23,7 +23,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
     @Override
     public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Log.e(TAG,"onCreateViewHolder----++-++-----***----()--");
+        Log.e(TAG,"onCreateViewHolder----++-++-----***----&&&&--");
         return new MyViewHolder(
                 LayoutInflater.from(mContext).inflate(R.layout.item_list, parent, false));
     }
