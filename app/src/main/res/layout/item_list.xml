@@ -1,0 +1,97 @@
+<!--<com.jhj.library.internal.MyLayout-->
+<!--xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--xmlns:tools="http://schemas.android.com/tools"-->
+<!--android:layout_width="match_parent"-->
+<!--android:layout_height="wrap_content"-->
+<!--android:clickable="true"-->
+<!--style="@style/Ripple.Item.Foreground"-->
+<!--android:tag="ItemRoot">-->
+
+
+<com.jhj.library.widget.SwipeMenuLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!--  MenuLayout start -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:tag="SwipeMenu"
+        android:gravity="center"
+        app:layout_gravity="right|center_vertical|below">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:padding="16dp"
+            android:background="#fd88ac"
+            android:clickable="true"
+            android:src="@drawable/ic_thumb_up_white_36dp"
+            android:foreground="?android:attr/selectableItemBackground"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:padding="16dp"
+            android:background="#ffd700"
+            android:clickable="true"
+            android:src="@drawable/ic_android_white_36dp"
+            android:foreground="?android:attr/selectableItemBackground"/>
+
+    </LinearLayout>
+    <!--  MenuLayout start -->
+
+
+
+    <!-- ItemViewLayout start-->
+    <com.jhj.library.internal.MyLayout
+        android:id="@+id/layout_content_parent"
+        style="@style/Ripple.Item.Foreground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:tag="ItemView_Parent"
+        android:visibility="visible">
+
+        <com.jhj.library.internal.MyLayout
+            android:id="@+id/layout_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="32dp"
+            android:tag="ItemView"
+            >
+
+            <com.jhj.library.internal.MyTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:clickable="true"
+                android:padding="8dp"
+                android:text="ItemView"
+                android:textSize="18sp"
+                android:textStyle="bold"/>
+
+            <com.jhj.library.internal.MyTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:clickable="true"
+                android:padding="8dp"
+                android:text="ItemView"
+                android:textSize="18sp"
+                android:textStyle="bold"/>
+
+        </com.jhj.library.internal.MyLayout>
+
+    </com.jhj.library.internal.MyLayout>
+    <!-- ItemViewLayout end-->
+
+
+</com.jhj.library.widget.SwipeMenuLayout>
+
+    <!--</com.jhj.library.internal.MyLayout-->

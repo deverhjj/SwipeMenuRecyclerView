@@ -1,0 +1,25 @@
+<resources>
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+
+    <style name="Ripple.Item.Foreground" parent="">
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+        <item name="android:background">@color/app_color_foreground</item>
+    </style>
+
+    <style name="Ripple.Item.Foreground_Menu" parent="">
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+        <item name="android:background">#ffacacac</item>
+    </style>
+
+    <style name="Ripple.Item.Background" parent="">
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+    </style>
+
+</resources>
