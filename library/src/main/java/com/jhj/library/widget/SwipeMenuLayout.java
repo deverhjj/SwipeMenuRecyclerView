@@ -110,6 +110,7 @@ public class SwipeMenuLayout extends ViewGroup {
 
     }
 
+
     private float dp2Px(float value) {
         float density = getContext().getResources().getDisplayMetrics().density;
         return value * density;
