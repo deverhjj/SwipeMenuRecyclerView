@@ -5,7 +5,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tool="http://schemas.android.com/tools"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tool:showIn="@layout/activity_main">
+    tool:showIn="@layout/frag_main"
+    android:background="@android:color/darker_gray">
 
     <com.jhj.library.widget.SwipeMenuRecyclerView
         android:id="@+id/recyclerView"

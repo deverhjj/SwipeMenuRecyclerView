@@ -23,18 +23,17 @@ public class MainActivityFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState)
-    {
-        View rootView=inflater.inflate(R.layout.fragment_main, container, false);
+                             Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        mRecyclerView= (RecyclerView) rootView.findViewById(R.id.recyclerView);
+        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         mRecyclerView.setHasFixedSize(true);
 
-        MyAdapter adapter=new MyAdapter(getActivity());
+        MyAdapter adapter = new MyAdapter(getActivity());
         mRecyclerView.setAdapter(adapter);
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager
-                .VERTICAL,false));
+                .VERTICAL, false));
 
         mRecyclerView.addItemDecoration(adapter.addItemDecor());
 

@@ -1,35 +1,47 @@
 package com.jhj.open.swipemenurecyclerview;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.view.OnApplyWindowInsetsListener;
+import android.support.v4.view.ViewCompat;
+import android.support.v4.view.WindowInsetsCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-public class MainActivity extends AppCompatActivity {
+public class SecondaryActivity extends AppCompatActivity {
+    private static final String TAG = SecondaryActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.acti_secondary);
 
-//        Window w = getWindow();
-//        View decorView = w.getDecorView();
-//        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-//                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-//        switchStatusbarMode(this, true, Color.TRANSPARENT);
+        Window w = getWindow();
+        View decorView = w.getDecorView();
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        switchStatusbarMode(this, true, Color.TRANSPARENT);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
+        forceFitSysWindow(findViewById(R.id.root), findViewById(R.id.appbar));
+    }
+
+    public static void forceFitSysWindow(final View listener, final View target) {
+        ViewCompat.setOnApplyWindowInsetsListener(listener, new OnApplyWindowInsetsListener() {
             @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, SecondaryActivity.class));
+            public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
+                Log.e(TAG, "forceFitSysWindow>>>");
+                target.setPadding(target.getPaddingLeft(), insets.getSystemWindowInsetTop(),
+                        target.getPaddingRight(), target.getPaddingBottom());
+                return insets;
             }
         });
     }

@@ -9,7 +9,7 @@ import android.view.Gravity;
 public class MyGravity extends Gravity {
     private static final String TAG = "MyGravity";
 
-    public static final int NO_Z_AXIS=-1;
+    public static final int NO_Z_AXIS = -1;
 
     /** Bits defining the vertical axis. */
     public static final int AXIS_Z_SHIFT = 8;

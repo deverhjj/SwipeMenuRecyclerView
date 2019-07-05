@@ -33,7 +33,7 @@ import java.util.List;
 public class SwipeMenuLayout extends ViewGroup {
     private static final String TAG = "SwipeMenuLayout";
 
-    private List<View> mMatchParentChildren=new ArrayList<>(1);
+    private List<View> mMatchParentChildren = new ArrayList<>(1);
 
     private View mItemView;
     private View mMenuView;
@@ -43,38 +43,38 @@ public class SwipeMenuLayout extends ViewGroup {
     public static final int STATE_DETAIL_OPENED = 2;
     public static final int STATE_DETAIL_CLOSING = 3;
     public static final int STATE_DETAIL_CLOSED = 4;
-    private int mDetailState=STATE_DETAIL_CLOSED;
+    private int mDetailState = STATE_DETAIL_CLOSED;
     
     
     public static final int STATE_IDLE = 0;// STATE_DETAIL_CLOSED 或 STATE_DETAIL_OPENED 状态
     public static final int STATE_DRAGGING = 1;
     public static final int STATE_SETTLING = 2;// STATE_DETAIL_CLOSING 或 STATE_DETAIL_OPENING 状态
-    private int mState=STATE_IDLE; 
-    
-    private static final float MIN_FLING_VELOCITY_X=400;//dp
+    private int mState = STATE_IDLE;
 
-    private static final Interpolator DEFAULT_OPEN_INTERPOLATOR=new LinearInterpolator();
-    private static final Interpolator DEFAULT_CLOSE_INTERPOLATOR=new LinearInterpolator();
+    private static final float MIN_FLING_VELOCITY_X = 400;//dp
+
+    private static final Interpolator DEFAULT_OPEN_INTERPOLATOR = new LinearInterpolator();
+    private static final Interpolator DEFAULT_CLOSE_INTERPOLATOR = new LinearInterpolator();
 
     private static final int DEFAULT_SCROLL_OPEN_DURATION=100;
-    private static final int DEFAULT_SCROLL_CLOSE_DURATION=1000;
+    private static final int DEFAULT_SCROLL_CLOSE_DURATION=100;
 
     private GestureDetectorCompat mGestureDetector;
     private ScrollerCompat mOpenScroller;
     private ScrollerCompat mCloseScroller;
     private float mMinFlingVelocityX;
 
-    private static final int NO_FLING=-1;
-    private static final int FLING_RIGHT=0;
-    private static final int FLING_LEFT=1;
-    private int mFlingDirection=NO_FLING;
+    private static final int NO_FLING = -1;
+    private static final int FLING_RIGHT = 0;
+    private static final int FLING_LEFT = 1;
+    private int mFlingDirection = NO_FLING;
     private boolean mIsFling;
 
     private float mInitialMotionX;
     private float mInitialMotionY;
 
-    private ViewConfiguration mViewConfiguration=ViewConfiguration.get(getContext());
-    private int mTouchSlop=mViewConfiguration.getScaledTouchSlop();
+    private ViewConfiguration mViewConfiguration = ViewConfiguration.get(getContext());
+    private int mTouchSlop = mViewConfiguration.getScaledTouchSlop();
 
     public SwipeMenuLayout(Context context) {
         super(context);
@@ -119,7 +119,6 @@ public class SwipeMenuLayout extends ViewGroup {
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-
         super.onMeasure(widthMeasureSpec,heightMeasureSpec);
 
         Log.i(TAG,"-----------------------onMeasure-----------s--s---------");
@@ -153,31 +152,35 @@ public class SwipeMenuLayout extends ViewGroup {
 
                     final int itemViewWidthSpec = MeasureSpec.makeMeasureSpec(
                             widthSize - lp.leftMargin - lp.rightMargin, MeasureSpec.EXACTLY);
-                    final int itemViewHeightSpec = getChildMeasureSpec(heightMeasureSpec,lp
-                            .topMargin+lp.bottomMargin,lp.height);
+                    final int itemViewHeightSpec = getChildMeasureSpec(heightMeasureSpec, lp
+                            .topMargin + lp.bottomMargin, lp.height);
 
                     child.measure(itemViewWidthSpec, itemViewHeightSpec);
 
                 } else if (isSwipeMenuView(child)) {
 
-                    mMenuView=child;
+                    mMenuView = child;
 
-
-                    final int swipeMenuWidthSpec = MeasureSpec.makeMeasureSpec(
-                            widthSize - lp.leftMargin - lp.rightMargin, MeasureSpec.UNSPECIFIED);
+                    // 测量 mode 需要调整
+                    final int swipeMenuWidthSpec = getChildMeasureSpec(widthMeasureSpec, lp
+                            .leftMargin + lp.rightMargin, lp.width);
+//                            MeasureSpec.makeMeasureSpec(
+//                            widthSize - lp.leftMargin - lp.rightMargin,
+//                            MeasureSpec.EXACTLY);
 
                     final int swipeMenuHeightSpec = getChildMeasureSpec(heightMeasureSpec,
                             lp.topMargin + lp.bottomMargin, lp.height);
 
-                    Log.e(TAG,"result_size="+MeasureSpec.getSize(swipeMenuHeightSpec)
-                    +",heightMode===AT_MOST"+(MeasureSpec.getMode(swipeMenuHeightSpec)==MeasureSpec
+                    Log.e(TAG, "result_size=" + MeasureSpec.getSize(swipeMenuHeightSpec)
+                            + ",heightMode===AT_MOST" + (MeasureSpec.getMode(swipeMenuHeightSpec) == MeasureSpec
                             .AT_MOST));
+
+                    Log.e(TAG, "swipeMenuWidthSpec>>>" + MeasureSpec.toString(swipeMenuWidthSpec));
 
                     child.measure(swipeMenuWidthSpec, swipeMenuHeightSpec);
 
-
-                    Log.e(TAG,"SwipeMenuView_width="+child.getMeasuredWidth()+"," +
-                            "SwipeMenuView_height="+child.getMeasuredHeight());
+                    Log.e(TAG, "SwipeMenuView_width=" + child.getMeasuredWidth() + "," +
+                            "SwipeMenuView_height=" + child.getMeasuredHeight());
 
                 } else {
                     throw new IllegalStateException("Child " + child + " at index " + i +
@@ -192,26 +195,26 @@ public class SwipeMenuLayout extends ViewGroup {
                     }
                 }
 
-                maxHeight=Math.max(maxHeight,child.getMeasuredHeight());
+                maxHeight = Math.max(maxHeight, child.getMeasuredHeight());
             }
         }
 
-        maxHeight=Math.max(maxHeight,getSuggestedMinimumHeight());
-        Log.e(TAG,"maxH------->"+maxHeight);
+        maxHeight = Math.max(maxHeight, getSuggestedMinimumHeight());
+        Log.e(TAG, "maxH------->" + maxHeight);
 
-        Log.e(TAG,"setMeasuredDimension==>"+"width="+widthSize+",height="+maxHeight);
-        setMeasuredDimension(widthSize,maxHeight);
+        Log.e(TAG, "setMeasuredDimension==>" + "width=" + widthSize + ",height=" + maxHeight);
+        setMeasuredDimension(widthSize, maxHeight);
 
-        final int reMeasureChildCount=mMatchParentChildren.size();
+        final int reMeasureChildCount = mMatchParentChildren.size();
 
         if (reMeasureChildCount > 0) {
             for (int i = 0; i < reMeasureChildCount; i++) {
                 final View child = mMatchParentChildren.get(i);
-                final LayoutParams lp= (LayoutParams) child.getLayoutParams();
+                final LayoutParams lp = (LayoutParams) child.getLayoutParams();
                 final int childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(
                         child.getMeasuredWidth(), MeasureSpec.EXACTLY);
                 final int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredHeight
-                        ()-lp.topMargin-lp.bottomMargin,
+                                () - lp.topMargin - lp.bottomMargin,
                         MeasureSpec.EXACTLY);
                 child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
             }
@@ -339,7 +342,6 @@ public class SwipeMenuLayout extends ViewGroup {
 
         return (absGravity & Gravity.LEFT) != 0 || (absGravity & Gravity.RIGHT) != 0;
     }
-
 
 
     @Override
@@ -478,9 +480,9 @@ public class SwipeMenuLayout extends ViewGroup {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
 
-        boolean handled=super.onInterceptTouchEvent(ev);
+        boolean handled = super.onInterceptTouchEvent(ev);
 
-        int action=ev.getAction();
+        int action = ev.getAction();
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
@@ -597,16 +599,16 @@ public class SwipeMenuLayout extends ViewGroup {
             case MotionEvent.ACTION_MOVE:
 
                 //当前 MenuLayout 或 ItemView 被用户拖拽
-                if (mState!=STATE_DRAGGING) {
+                if (mState != STATE_DRAGGING) {
                     mState = STATE_DRAGGING;
                 }
 
-                final float curX=ev.getX();
-                final float curDx=curX-mOldMoveX;
+                final float curX = ev.getX();
+                final float curDx = curX - mOldMoveX;
 
-                mItemViewRight=swipeManually(curDx);
+                mItemViewRight = swipeManually(curDx);
 
-                mOldMoveX=curX;
+                mOldMoveX = curX;
 
                 break;
             case MotionEvent.ACTION_UP:
@@ -923,15 +925,15 @@ public class SwipeMenuLayout extends ViewGroup {
 
         @Override
         public boolean onDown(MotionEvent e) {
-            mIsFling=false;
-            mFlingDirection=NO_FLING;
+            mIsFling = false;
+            mFlingDirection = NO_FLING;
             return super.onDown(e);
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
 
-            Log.i(TAG,"onFling_velocityX="+velocityX+",velocityY="+velocityY);
+            Log.i(TAG, "onFling_velocityX=" + velocityX + ",velocityY=" + velocityY);
 
             if (Math.abs(velocityX) >= mMinFlingVelocityX) {
                 Log.i(TAG, "onFling------->" + mMinFlingVelocityX);

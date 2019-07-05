@@ -22,7 +22,10 @@
         android:orientation="horizontal"
         android:tag="SwipeMenu"
         android:gravity="center"
-        app:layout_gravity="right|center_vertical|below">
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@android:color/holo_purple"
+        app:layout_gravity="end|center_vertical|below">
 
         <ImageView
             android:layout_width="wrap_content"
@@ -31,6 +34,7 @@
             android:padding="16dp"
             android:background="#fd88ac"
             android:clickable="true"
+            android:focusable="true"
             android:src="@drawable/ic_thumb_up_white_36dp"
             android:foreground="?android:attr/selectableItemBackground"/>
 
@@ -41,11 +45,12 @@
             android:padding="16dp"
             android:background="#ffd700"
             android:clickable="true"
+            android:focusable="true"
             android:src="@drawable/ic_android_white_36dp"
             android:foreground="?android:attr/selectableItemBackground"/>
 
     </LinearLayout>
-    <!--  MenuLayout start -->
+    <!--  MenuLayout end -->
 
 
 
