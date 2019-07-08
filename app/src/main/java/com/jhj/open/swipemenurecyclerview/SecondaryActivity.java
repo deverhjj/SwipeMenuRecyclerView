@@ -4,15 +4,22 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.view.OnApplyWindowInsetsListener;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.WindowInsetsCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+
+import com.jhj.library.widget.SwipeMenuLayout;
 
 public class SecondaryActivity extends AppCompatActivity {
     private static final String TAG = SecondaryActivity.class.getSimpleName();
@@ -26,12 +33,51 @@ public class SecondaryActivity extends AppCompatActivity {
         View decorView = w.getDecorView();
         decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-        switchStatusbarMode(this, true, Color.TRANSPARENT);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            w.setStatusBarColor(Color.TRANSPARENT);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            w.setFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS,
+                    WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+
+        //        switchStatusbarMode(this, true, Color.TRANSPARENT);
+
+
+
+        final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        forceFitSysWindow(findViewById(R.id.root), findViewById(R.id.appbar));
+        AppBarLayout appbar = findViewById(R.id.appbar);
+        SwipeMenuLayout swipeLayout = findViewById(R.id.root);
+        swipeLayout.setAutoCloseMenu(false);
+
+        CoordinatorLayout coordinator = findViewById(R.id.coordinator);
+        CollapsingToolbarLayout collapsing = findViewById(R.id.collapsing_layout);
+
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            appbar.setStateListAnimator();
+//        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(swipeLayout, new OnApplyWindowInsetsListener() {
+            @Override
+            public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
+                Log.e(TAG, "forceFitSysWindow>>>");
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) toolbar
+                        .getLayoutParams();
+                lp.topMargin = insets.getSystemWindowInsetTop();
+                toolbar.setLayoutParams(lp);
+                return insets;
+            }
+        });
+
+        collapsing.setTitle(getString(R.string.app_name));
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
 
     public static void forceFitSysWindow(final View listener, final View target) {

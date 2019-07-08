@@ -2,11 +2,18 @@
 <com.jhj.library.widget.SwipeMenuLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/root"
-    android:fitsSystemWindows="false">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root">
+
+    <fragment
+        android:tag="content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        class="com.jhj.open.swipemenurecyclerview.MainActivityFragment"
+        tools:layout="@layout/fragment_main"
+        app:layout_gravity="start|center_vertical"/>
 
     <!--  MenuLayout start -->
     <LinearLayout
@@ -18,7 +25,10 @@
         android:gravity="center"
         android:orientation="horizontal"
         android:tag="SwipeMenu"
+        android:visibility="gone"
         app:layout_gravity="end|center_vertical|below">
+
+        <!--  android:layout_marginRight="60dp" -->
 
         <ImageView
             android:layout_width="0dp"
@@ -58,12 +68,35 @@
             android:layout_height="wrap_content"
             android:theme="@style/AppTheme.AppBarOverlay">
 
-            <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar"
+            <android.support.design.widget.CollapsingToolbarLayout
+                android:id="@+id/collapsing_layout"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimary"
-                app:popupTheme="@style/AppTheme.PopupOverlay" />
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
+                app:titleEnabled="true"
+                app:title="@string/app_name"
+                app:statusBarScrim="@color/colorAccent"
+                app:expandedTitleGravity="bottom|start"
+                app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="280dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:src="@mipmap/ic_launcher"
+                    android:scaleType="centerCrop"/>
+
+                <android.support.v7.widget.Toolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    app:layout_collapseMode="pin"
+                    app:title="@string/app_name"
+                    app:popupTheme="@style/AppTheme.PopupOverlay"/>
+
+            </android.support.design.widget.CollapsingToolbarLayout>
 
         </android.support.design.widget.AppBarLayout>
 
@@ -77,10 +110,11 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/app_name"
+                android:text="@string/long_text"
                 android:gravity="center"
-                android:textSize="68sp"
+                android:padding="16dp"
+                android:lineSpacingMultiplier="1.3"
+                android:textSize="18sp"
                 />
 
         </android.support.v4.widget.NestedScrollView>

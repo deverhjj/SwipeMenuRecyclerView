@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
 //                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
 //        switchStatusbarMode(this, true, Color.TRANSPARENT);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
