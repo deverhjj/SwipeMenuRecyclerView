@@ -533,6 +533,13 @@ public class SwipeMenuLayout extends ViewGroup {
                 onSwipe(ev);
                 break;
             case MotionEvent.ACTION_MOVE:
+                // 如果同一次手势过程中没有形成 swipe 手势，
+                // 那么之后不会再去触发 swipe 手势操作，即使满足 swipe 手势。
+                if (!mCanContinueDetectSwipe) {
+                    handled = false;
+                    break;
+                }
+
                 // TouchSlop 避免过于对触摸列表里视图侧滑菜单滑动事件判断的敏感度，
                 // 从而达到在一定的 ACTION_MOVE 范围内不视为侧滑手势，达到列表项在正常的触摸点击手势范围内
                 final float absDiffX = Math.abs(mInitialMotionX - ev.getX());
@@ -540,16 +547,22 @@ public class SwipeMenuLayout extends ViewGroup {
                 Logger.e(TAG, "onInterceptTouchEvent////ACTION_MOVE////diffX=" + absDiffX +
                               "///mTouchSlop" + "=" + mTouchSlop);
 
-                // 侧滑角度，为了控制侧滑手势的灵敏度，20 度以内才能触发侧滑手势
+                // 侧滑角度，为了控制侧滑手势的灵敏度，60 度以内才能触发侧滑手势
                 final double swipeAngle = Math.toDegrees(Math.atan2(Math.abs(mInitialMotionX - ev.getX()),
                         Math.abs(mInitialMotionY - ev.getY())));
 
                 Logger.e(TAG, "onInterceptTouchEvent-ACTION_MOVE-swipeAngle = " + swipeAngle);
 
-                // 如果同一次手势过程中没有形成 swipe 手势，那么之后不会再去触发 swipe 手势操作，即使满足 swipe 手势
-                if (!mCanContinueDetectSwipe) {
-                    handled = false;
-                } else if (absDiffX > mTouchSlop && swipeAngle > 80) {
+                final boolean isSatisfiedTouchSlop = absDiffX > mTouchSlop;
+                final boolean isSatisfiedSwipeAngle = swipeAngle > 60;
+
+                if (!isSatisfiedSwipeAngle) {
+                    // 更加严格的控制检测 swipe 手势的机会，如果在同一次手势中没有满足侧滑角度，
+                    // 则之后的该次手势都不会去检测 swipe 手势。
+                    handled = mCanContinueDetectSwipe = false;
+                } else if (isSatisfiedTouchSlop) {
+                    // 如果满足侧滑角度和touchslop，但是 swipe 手势没有消费改事件，
+                    // 则之后的该次手势也都不会去检测 swipe 手势。
                     handled = mCanContinueDetectSwipe = onSwipe(ev);
                 } else {
                     // 不满足 swipe 手势时初始化 swipe 手势的 move x 坐标，为了 swipe 手势的连贯性
@@ -600,28 +613,27 @@ public class SwipeMenuLayout extends ViewGroup {
 
         int pointerIndex = event.getActionIndex();
         int pointerId = event.getPointerId(pointerIndex);
-        Logger.i(TAG, "pointerIndex=" + pointerIndex + ",pointerId=" + pointerId);
+        Logger.i(TAG, "pointerIndex=" + pointerIndex + ",pointerId=" + pointerId + ",action=" + action);
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
             case MotionEvent.ACTION_MOVE:
             case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
                 handled = onSwipe(event);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    Logger.e(TAG, "***************onTouchEvent*******handled******" + handled +
-                                  MotionEvent.actionToString(event.getAction()));
-                }
                 break;
             case MotionEvent.ACTION_CANCEL:
                 Logger.e(TAG,"***************onTouchEvent*******ACTION_CANCEL******"+"smoothCloseMenu");
                 smoothCloseMenu();
+                break;
             default:
                 break;
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            Logger.e(TAG, "onTouchEvent/////" + handled + MotionEvent.actionToString(action) +
-                          ",,,handled====>" + handled);
+            Logger.e(TAG, "***************onTouchEvent*************"
+                          + MotionEvent.actionToString(event.getAction()) + ",,,handled====>" + handled);
         }
 
         return handled;
@@ -653,9 +665,17 @@ public class SwipeMenuLayout extends ViewGroup {
         }
     }
 
+    // 最近一次手指 up 事件对应的 pointerId
+    // 为了在多指触摸的情况下避免 swipe 侧滑过程中被其他 pointer 打断情况
+    // 这样做就能实现在多指触摸的情况下滑动依然能够达到侧滑手势操作的连贯性
+    private int mLastUpPointerId;
+
     public boolean onSwipe(MotionEvent ev) {
         boolean handled = mGestureDetector.onTouchEvent(ev);
-        int action = ev.getActionMasked();
+        final int action = ev.getActionMasked();
+        final int pointerIndex = ev.getActionIndex();
+        final int pointerId = ev.getPointerId(pointerIndex);
+
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 Logger.i(TAG,"ACTION_DOWN===="+ev.getX());
@@ -667,6 +687,12 @@ public class SwipeMenuLayout extends ViewGroup {
                 mInitialMotionX = ev.getX();
                 mInitialMotionY = ev.getY();
                 break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                // 为了在多指触摸侧滑的情况下重置初始的 move 坐标，
+                // 为了后续的 move 事件时能够连贯侧滑
+                mLastMoveX = ev.getX();
+                mLastMoveY = ev.getY();
+                break;
             case MotionEvent.ACTION_MOVE:
                 //当前 MenuLayout 或 ItemView 被用户拖拽
                 if (mState != STATE_DRAGGING) {
@@ -674,84 +700,100 @@ public class SwipeMenuLayout extends ViewGroup {
                 }
                 final float curX = ev.getX();
                 final float curDx = curX - mLastMoveX;
-                handled = swipeManually(curDx);
+                Logger.i(TAG, "curMove x=" + curX);
+
+                // 如果当前切换了 pointer，忽略这次的 move 事件
+                // 为了避免切换 pointer 过程中由于两次 move 事件形成 moveDx
+                // 导致手势断层现象，也就是说需要处理多指操作的连贯性
+                if (pointerId != mLastUpPointerId) {
+                    final float fromX = mLastMoveX;
+                    final float toX = ev.getX();
+                    Logger.i(TAG, "next pointer fromX=" + fromX + ",toX=" + toX);
+                    mLastUpPointerId = pointerId;
+                    handled = true;
+                } else {
+                    handled = swipeManually(curDx);
+                }
                 mLastMoveX = curX;
                 mLastMoveY = ev.getY();
                 break;
             case MotionEvent.ACTION_UP:
-
                 Logger.i(TAG, "ACTION_UP" + ev.getX() + "" +
-                              ",mLastMoveX==" + mLastMoveX);
-
-                final int upX = (int) ev.getX();
-
-                //这里注意 upX可能
-                final int dx = (int) (upX - mInitialMotionX);
-
-                if (dx < 0) {
-                    Logger.i(TAG, "dx < 0");
-                    // 当手指向左滑动打开菜单 随后 向右 Fling 关闭菜单时需要判断当前 Fling 的方向和是否可以打开菜单两个条件
-                    //
-                    if (checkSwipeMenuViewAbsoluteGravity(mMenuView, Gravity.LEFT)) {
-                        if (mFlingDirection == FLING_LEFT ||
-                            (mFlingDirection != FLING_RIGHT && canCloseMenu()))
-                        {
-                            Logger.i(TAG, "dx > 0==== smoothCloseMenu" + "/////" + mIsFling +
-                                          ",FLING_RIGHT");
-                            handled = smoothCloseMenu();
-                        } else if (mFlingDirection == FLING_RIGHT || canOpenMenu()) {
-                            Logger.i(TAG, "dx > 0==== smoothOpenMenu" + "/////" + mIsFling +
-                                          ",FLING_LEFT");
-                            handled = smoothOpenMenu();
-                        }
-                    } else {
-                        if (mFlingDirection == FLING_LEFT ||
-                            (mFlingDirection != FLING_RIGHT && canOpenMenu()))
-                        {
-                            Logger.i(TAG, "dx < 0 ==== smoothOpenMenu" + "/////" + mIsFling +
-                                          ",FLING_LEFT");
-                            handled = smoothOpenMenu();
-                        } else if (mFlingDirection == FLING_RIGHT || canCloseMenu()) {
-                            Logger.i(TAG, "dx < 0 ==== smoothCloseMenu" + "/////" + mIsFling +
-                                          ",FLING_RIGHT");
-                            handled = smoothCloseMenu();
-                        }
-                    }
-                } else {
-                    Logger.i(TAG,"dx > 0");
-                    if (checkSwipeMenuViewAbsoluteGravity(mMenuView, Gravity.LEFT)) {
-                        if (mFlingDirection == FLING_RIGHT ||
-                            (mFlingDirection != FLING_LEFT && canOpenMenu()))
-                        {
-                            Logger.i(TAG, "dx > 0 ==== smoothOpenMenu" + "/////" + mIsFling +
-                                          ",FLING_RIGHT");
-                            handled = smoothOpenMenu();
-                        } else if (mFlingDirection == FLING_LEFT || canCloseMenu()) {
-                            Logger.i(TAG, "dx > 0 ==== smoothCloseMenu" + "/////" + mIsFling +
-                                          ",FLING_LEFT");
-                            handled = smoothCloseMenu();
-                        }
-                    } else {
-                        if (mFlingDirection == FLING_RIGHT ||
-                            (mFlingDirection != FLING_LEFT && canCloseMenu()))
-                        {
-                            Logger.i(TAG, "dx > 0==== smoothCloseMenu" + "/////" + mIsFling +
-                                          ",FLING_RIGHT");
-                            handled = smoothCloseMenu();
-                        } else if (mFlingDirection == FLING_LEFT || canOpenMenu()) {
-                            Logger.i(TAG, "dx > 0==== smoothOpenMenu" + "/////" + mIsFling +
-                                          ",FLING_LEFT");
-                            handled = smoothOpenMenu();
-                        }
-                    }
-                }
-
+                              ",mLastMoveX==" + mLastMoveX + ",mState" + mState);
+                handled = handleUpEvent(ev);
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                // 为了多指操作的连贯性，记录这个 pointerId
+                mLastUpPointerId = pointerId;
                 break;
             default:
                 break;
         }
         return handled;
     }
+
+    private boolean handleUpEvent(MotionEvent ev) {
+        boolean handled = false;
+        final int upX = (int) ev.getX();
+        //这里注意 upX 可能
+        final int dx = (int) (upX - mInitialMotionX);
+
+        if (dx < 0) {
+            Logger.i(TAG, "dx < 0");
+            // 当手指向左滑动打开菜单 随后 向右 Fling 关闭菜单时需要判断当前 Fling 的方向和是否可以打开菜单两个条件
+            //
+            if (checkSwipeMenuViewAbsoluteGravity(mMenuView, Gravity.LEFT)) {
+                if (mFlingDirection == FLING_LEFT ||
+                    (mFlingDirection != FLING_RIGHT && canCloseMenu())) {
+                    Logger.i(TAG, "dx > 0==== smoothCloseMenu" + "/////" + mIsFling +
+                                  ",FLING_RIGHT");
+                    handled = smoothCloseMenu();
+                } else if (mFlingDirection == FLING_RIGHT || canOpenMenu()) {
+                    Logger.i(TAG, "dx > 0==== smoothOpenMenu" + "/////" + mIsFling +
+                                  ",FLING_LEFT");
+                    handled = smoothOpenMenu();
+                }
+            } else {
+                if (mFlingDirection == FLING_LEFT ||
+                    (mFlingDirection != FLING_RIGHT && canOpenMenu())) {
+                    Logger.i(TAG, "dx < 0 ==== smoothOpenMenu" + "/////" + mIsFling +
+                                  ",FLING_LEFT");
+                    handled = smoothOpenMenu();
+                } else if (mFlingDirection == FLING_RIGHT || canCloseMenu()) {
+                    Logger.i(TAG, "dx < 0 ==== smoothCloseMenu" + "/////" + mIsFling +
+                                  ",FLING_RIGHT");
+                    handled = smoothCloseMenu();
+                }
+            }
+        } else {
+            Logger.i(TAG, "dx > 0");
+            if (checkSwipeMenuViewAbsoluteGravity(mMenuView, Gravity.LEFT)) {
+                if (mFlingDirection == FLING_RIGHT ||
+                    (mFlingDirection != FLING_LEFT && canOpenMenu())) {
+                    Logger.i(TAG, "dx > 0 ==== smoothOpenMenu" + "/////" + mIsFling +
+                                  ",FLING_RIGHT");
+                    handled = smoothOpenMenu();
+                } else if (mFlingDirection == FLING_LEFT || canCloseMenu()) {
+                    Logger.i(TAG, "dx > 0 ==== smoothCloseMenu" + "/////" + mIsFling +
+                                  ",FLING_LEFT");
+                    handled = smoothCloseMenu();
+                }
+            } else {
+                if (mFlingDirection == FLING_RIGHT ||
+                    (mFlingDirection != FLING_LEFT && canCloseMenu())) {
+                    Logger.i(TAG, "dx > 0==== smoothCloseMenu" + "/////" + mIsFling +
+                                  ",FLING_RIGHT");
+                    handled = smoothCloseMenu();
+                } else if (mFlingDirection == FLING_LEFT || canOpenMenu()) {
+                    Logger.i(TAG, "dx > 0==== smoothOpenMenu" + "/////" + mIsFling +
+                                  ",FLING_LEFT");
+                    handled = smoothOpenMenu();
+                }
+            }
+        }
+        return handled;
+    }
+
 
     private boolean canOpenMenu() {
         View itemView = mItemView;
@@ -858,6 +900,7 @@ public class SwipeMenuLayout extends ViewGroup {
      * @param dx 手指实时移动的距离(newMoveX-oldMoveX)
      */
     private boolean swipeManually(final float dx) {
+        Logger.i(TAG, "swipeManually>>>>" + dx);
         if (dx == 0) return false;
         if (checkSwipeMenuViewAbsoluteGravity(mMenuView, Gravity.LEFT)) {
             if ((dx < 0 && mDetailState == STATE_DETAIL_CLOSED) ||
@@ -1037,7 +1080,6 @@ public class SwipeMenuLayout extends ViewGroup {
 
         if (checkSwipeMenuViewAbsoluteGravity(menuView, Gravity.LEFT)) {
             if ((lp_mv.gravity & MyGravity.DEEP_GRAVITY_MASK) == MyGravity.BELOW) {
-
                 final int dis = itemView.getLeft() - menuView.getRight();
                 final boolean isOver = dis > 0;
                 dx = isOver ? dis - lp_iv.leftMargin : Math.abs(dis) + lp_iv.leftMargin;
@@ -1049,7 +1091,6 @@ public class SwipeMenuLayout extends ViewGroup {
             }
         } else {
             if ((lp_mv.gravity & MyGravity.DEEP_GRAVITY_MASK) == MyGravity.BELOW) {
-
                 final int dis = itemView.getRight() - menuView.getLeft();
                 final boolean isOver = dis < 0;
                 dx = isOver ? Math.abs(dis) - lp_iv.rightMargin : -dis - lp_iv.rightMargin;
@@ -1057,12 +1098,12 @@ public class SwipeMenuLayout extends ViewGroup {
             } else if ((lp_mv.gravity & MyGravity.DEEP_GRAVITY_MASK) == MyGravity.ABOVE) {
 
             } else {
-                //TODO 考虑菜单 leftMargin过长问题
-                dx = getMeasuredWidth() - menuView.getRight();
+                dx = -(menuView.getWidth() + lp_mv.leftMargin + itemView.getLeft());
             }
         }
 
-        mOpenScroller.startScroll(itemView.getLeft(), 0, dx, 0, DEFAULT_SCROLL_OPEN_DURATION);
+        mOpenScroller.startScroll(itemView.getLeft(),
+                0, dx, 0, DEFAULT_SCROLL_OPEN_DURATION);
 
         postInvalidate();
 
@@ -1080,10 +1121,10 @@ public class SwipeMenuLayout extends ViewGroup {
         mDetailState = STATE_DETAIL_CLOSING;
 
         View itemView = mItemView;
-        LayoutParams lp = (LayoutParams) itemView.getLayoutParams();
+        LayoutParams lp_iv = (LayoutParams) itemView.getLayoutParams();
 
         mCloseScroller.startScroll(itemView.getLeft(), 0,
-                itemView.getMeasuredWidth() + lp.leftMargin - itemView.getRight(), 0,
+                -itemView.getLeft() + lp_iv.leftMargin, 0,
                 DEFAULT_SCROLL_CLOSE_DURATION);
 
         postInvalidate();
