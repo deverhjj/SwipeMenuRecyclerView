@@ -5,10 +5,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.os.Build;
-import android.support.v4.view.GestureDetectorCompat;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.view.ViewCompat;
-import android.support.v4.widget.ScrollerCompat;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -18,6 +14,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
+import android.widget.OverScroller;
 
 import com.jhj.dev.library.R;
 import com.jhj.library.internal.MyGravity;
@@ -26,8 +23,40 @@ import com.jhj.library.utils.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.core.view.GestureDetectorCompat;
+import androidx.core.view.GravityCompat;
+import androidx.core.view.ViewCompat;
+
 /**
- * Created by jhj_Plus on 2016/4/11.
+ * 侧滑布局是一种能够检测并响应用户侧滑手势的 UI 交互效果的自定义布局容器
+ *
+ * <p>
+ *      当前实现了 LEFT, LEFT|BELOW, RIGHT, RIGHT|BELOW 四种侧滑布局样式，通过 xml 中的 app: layout_gravity 指定
+ * <p>
+ *     实现原理注意点：
+ *     <ul>
+ *         <li>touchSlop 和 swipeAngle 用于控制满足 swipe 手势的前提条件和用于调整触发手势的灵敏度</li>
+ *
+ *         <li>如果在 onInterceptTouchEvent 过程中 onSwipe 返回 false 没有消费此次事件
+ *         或者同一次触摸手势的过程中 swipeAngle 没有满足 swipe 手势，那么后续不在分发触摸事件给 onSwipe
+ *         </li>
+ *
+ *         <li>多指触摸的情况下需要控制手势的连贯操作，一种是屏幕同时存在多指滑动时切换手指滑动，
+ *         第二种是单指侧滑过程中被后续的单指操作中断</li>
+ *
+ *         <li>childView 在自身满足滑动触摸事件时会调用 parentView 的 requstDisallowOnInterceptTouchEvent
+ *         但是为了能够在 childView 滑动过程中也能够中断 childView 的滑动继续能够去检测并触发 swipe 手势操作
+ *         这里禁用了 requstDisallowOnInterceptTouchEvent 的实现，但是这样会中断 childView  的水平滚动的
+ *         情况， 比如 childView 是一个 HorizontialScrollerView 或者是一个横向滚动的 RecyclerView
+ *          或者是一个能够水平滑动的 ViewPager，但是 Android 的 requstDisallowOnInterceptTouchEvent 接口
+ *          又没有具体是哪一个 childView 在 requstDisallowOnInterceptTouchEvent 的上下文，
+ *          所以只能自定义一个类似的提供 SwipeMenuLayout 的 childView 能够真正 requstDisallowOnInterceptTouchEvent
+ *          的方法，如果 childView 能够水平滚动就不会拦截触摸事件，否则会强制拦截忽略该 childView 的禁止拦截请求
+ *          </li>
+ *     </ul>
+ * Created by jhj_Plus on 2016/4/11.<br/>
+ * Updated at 2019/7/10.(时隔三年重启)
+ *
  */
 public class SwipeMenuLayout extends ViewGroup {
     private static final String TAG = "SwipeMenuLayout";
@@ -54,12 +83,12 @@ public class SwipeMenuLayout extends ViewGroup {
     private static final Interpolator DEFAULT_OPEN_INTERPOLATOR = new LinearInterpolator();
     private static final Interpolator DEFAULT_CLOSE_INTERPOLATOR = new LinearInterpolator();
 
-    private static final int DEFAULT_SCROLL_OPEN_DURATION=100;
-    private static final int DEFAULT_SCROLL_CLOSE_DURATION=100;
+    private static final int DEFAULT_SCROLL_OPEN_DURATION = 100;
+    private static final int DEFAULT_SCROLL_CLOSE_DURATION = 100;
 
     private GestureDetectorCompat mGestureDetector;
-    private ScrollerCompat mOpenScroller;
-    private ScrollerCompat mCloseScroller;
+    private OverScroller mOpenScroller;
+    private OverScroller mCloseScroller;
     private float mMinFlingVelocityX;
 
     private static final int NO_FLING = -1;
@@ -72,6 +101,10 @@ public class SwipeMenuLayout extends ViewGroup {
     private float mInitialMotionY;
     private float mLastMoveX;
     private float mLastMoveY;
+    // 最近一次手指 up 事件对应的 pointerId
+    // 为了在多指触摸的情况下避免 swipe 侧滑过程中被其他 pointer 打断情况
+    // 这样做就能实现在多指触摸的情况下滑动依然能够达到侧滑手势操作的连贯性
+    private int mLastUpPointerId;
 
     private ViewConfiguration mViewConfiguration = ViewConfiguration.get(getContext());
     private int mTouchSlop = mViewConfiguration.getScaledTouchSlop();
@@ -102,16 +135,25 @@ public class SwipeMenuLayout extends ViewGroup {
     private void init(AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         //设置绘制 Child 的顺序可以改变，忽略布局文件中定义 SwipeMenuView 和 ItemView 的顺序
         // setChildrenDrawingOrderEnabled(true);
-        //
         mGestureDetector = new GestureDetectorCompat(getContext(), new GestureListener());
+        // 禁止 GestureDetector 检测 Longpress 和 DoubleTap 手势，
+        // 为了在单指 swipe 过程中的 fling 手势检测不被这两个手势影响
+        // 例如 手指 A 经过 DOWN -> {MOVE} -> UP -> DOWN -> {MOVE} -> UP
+        // 两次 DOWN 时间如果满足系统的 DoubleTap 手势，GestureDetector 会记录这次 DoubleTap 手势，
+        // 从而 GestureDetector 在最后的 UP 事件中直接处理返回了 DoubleTap 手势，没有机会触发 Fling 手势，
+        // 即使手指 A 的确触发了 Fling 手势，因此 GestureListener 不会收这次的 Fling 回调。
+        // 然而本侧滑布局在用户拖拽过程中可能会快速点击两次该布局，
+        // 如果紧接着手指 fling 的话就需要接收此次 fling 手势来处理后续侧滑逻辑
+        mGestureDetector.setIsLongpressEnabled(false);
+        // 这里显示地置为 null 或者 GestureListener 实现 OnGestureListener 接口，
+        // 而不是继承 SimpleOnGestureListener，因为 SimpleOnGestureListener 实现了 OnDoubleTapListener
+        mGestureDetector.setOnDoubleTapListener(null);
 
-        mOpenScroller = ScrollerCompat.create(getContext(), DEFAULT_OPEN_INTERPOLATOR);
-
-        mCloseScroller = ScrollerCompat.create(getContext(), DEFAULT_CLOSE_INTERPOLATOR);
-
+        mOpenScroller = new OverScroller(getContext(), DEFAULT_OPEN_INTERPOLATOR);
+        mCloseScroller = new OverScroller(getContext(), DEFAULT_CLOSE_INTERPOLATOR);
+        // 触发水平 Fling 手势的最小 fling X 速度
         mMinFlingVelocityX = dp2Px(MIN_FLING_VELOCITY_X);
     }
-
 
     private float dp2Px(float value) {
         float density = getContext().getResources().getDisplayMetrics().density;
@@ -228,8 +270,8 @@ public class SwipeMenuLayout extends ViewGroup {
         Logger.i(TAG,
                 "______________________onLayout___________________________" + ",l=" + l + ",t=" +
                 t + "," + "r=" + r + ",b=" + b + ",changed=" + changed);
-        // 用户拖拽情况下不布局，为了不打断侧滑交互
-        if (getState() == STATE_DRAGGING) return;
+        // 用户拖拽或者正在动画滚动情况下不布局，为了不打断侧滑交互
+        if (getState() != STATE_IDLE) return;
 
         final int childCount = getChildCount();
         final int width = getMeasuredWidth();
@@ -521,7 +563,6 @@ public class SwipeMenuLayout extends ViewGroup {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         boolean handled = super.onInterceptTouchEvent(ev);
-
         int action = ev.getActionMasked();
         //        int pointerIndex = ev.getActionIndex();
         //        int pointerId = ev.getPointerId(pointerIndex);
@@ -530,7 +571,7 @@ public class SwipeMenuLayout extends ViewGroup {
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 mCanContinueDetectSwipe = true;
-                onSwipe(ev);
+                handled = onSwipe(ev);
                 break;
             case MotionEvent.ACTION_MOVE:
                 // 如果同一次手势过程中没有形成 swipe 手势，
@@ -539,7 +580,6 @@ public class SwipeMenuLayout extends ViewGroup {
                     handled = false;
                     break;
                 }
-
                 // TouchSlop 避免过于对触摸列表里视图侧滑菜单滑动事件判断的敏感度，
                 // 从而达到在一定的 ACTION_MOVE 范围内不视为侧滑手势，达到列表项在正常的触摸点击手势范围内
                 final float absDiffX = Math.abs(mInitialMotionX - ev.getX());
@@ -610,10 +650,10 @@ public class SwipeMenuLayout extends ViewGroup {
     public boolean onTouchEvent(MotionEvent event) {
         boolean handled = super.onTouchEvent(event);
         int action = event.getActionMasked();
-
         int pointerIndex = event.getActionIndex();
         int pointerId = event.getPointerId(pointerIndex);
-        Logger.i(TAG, "pointerIndex=" + pointerIndex + ",pointerId=" + pointerId + ",action=" + action);
+        Logger.i(TAG, "pointerIndex=" + pointerIndex +
+                      ",pointerId=" + pointerId + ",action=" + action);
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
@@ -665,31 +705,46 @@ public class SwipeMenuLayout extends ViewGroup {
         }
     }
 
-    // 最近一次手指 up 事件对应的 pointerId
-    // 为了在多指触摸的情况下避免 swipe 侧滑过程中被其他 pointer 打断情况
-    // 这样做就能实现在多指触摸的情况下滑动依然能够达到侧滑手势操作的连贯性
-    private int mLastUpPointerId;
-
+    /**
+     * 手动处理侧滑手势触摸事件
+     * @param ev 当前的 MotionEvent 事件
+     * @return 是否消费了此次 MotionEvent 事件
+     */
     public boolean onSwipe(MotionEvent ev) {
         boolean handled = mGestureDetector.onTouchEvent(ev);
+        Logger.i(TAG, "GestureDetector>>>handled = " + handled);
+
         final int action = ev.getActionMasked();
         final int pointerIndex = ev.getActionIndex();
         final int pointerId = ev.getPointerId(pointerIndex);
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                Logger.i(TAG,"ACTION_DOWN===="+ev.getX());
-
-                if (mState != STATE_IDLE) {
-                    mState = STATE_IDLE;
+                Logger.i(TAG, "ACTION_DOWN====" + ev.getX());
+                if (mState == STATE_SETTLING) {
+                    // 当前处于自动滚动状态，中断自动滚动操作，
+                    // 让当前 ACTION_DOWN 对应的 pointer 接管手动侧滑手势。
+                    if (mDetailState == STATE_DETAIL_OPENING) {
+                        mOpenScroller.abortAnimation();
+                    } else if (mDetailState == STATE_DETAIL_CLOSING) {
+                        mCloseScroller.abortAnimation();
+                    }
+                    // 将状态重置为连贯的好像最后一次 DRAGGING MOVE 事件一样
+                    mState = STATE_DRAGGING;
+                    mDetailState = STATE_DETAIL_MOVING;
+                    mLastMoveX = ev.getX();
+                    mLastMoveY = ev.getY();
+                    handled = true;
+                } else if (mState == STATE_DRAGGING) {
+                    // 当前处于 DRAGGING 状态，消费此次 ACTION_DOWN 事件
+                    handled = true;
                 }
-
                 mInitialMotionX = ev.getX();
                 mInitialMotionY = ev.getY();
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 // 为了在多指触摸侧滑的情况下重置初始的 move 坐标，
-                // 为了后续的 move 事件时能够连贯侧滑
+                // 为了后续先前的 pointerId（pointerId=0）的 move 事件时能够接管并连贯侧滑
                 mLastMoveX = ev.getX();
                 mLastMoveY = ev.getY();
                 break;
@@ -701,7 +756,6 @@ public class SwipeMenuLayout extends ViewGroup {
                 final float curX = ev.getX();
                 final float curDx = curX - mLastMoveX;
                 Logger.i(TAG, "curMove x=" + curX);
-
                 // 如果当前切换了 pointer，忽略这次的 move 事件
                 // 为了避免切换 pointer 过程中由于两次 move 事件形成 moveDx
                 // 导致手势断层现象，也就是说需要处理多指操作的连贯性
@@ -725,6 +779,7 @@ public class SwipeMenuLayout extends ViewGroup {
             case MotionEvent.ACTION_POINTER_UP:
                 // 为了多指操作的连贯性，记录这个 pointerId
                 mLastUpPointerId = pointerId;
+                handled = true;
                 break;
             default:
                 break;
@@ -745,23 +800,23 @@ public class SwipeMenuLayout extends ViewGroup {
             if (checkSwipeMenuViewAbsoluteGravity(mMenuView, Gravity.LEFT)) {
                 if (mFlingDirection == FLING_LEFT ||
                     (mFlingDirection != FLING_RIGHT && canCloseMenu())) {
-                    Logger.i(TAG, "dx > 0==== smoothCloseMenu" + "/////" + mIsFling +
-                                  ",FLING_RIGHT");
+                    Logger.i(TAG, "dx < 0==== smoothCloseMenu" + "/////" + mIsFling +
+                                  ",FlingDirection=" + mFlingDirection);
                     handled = smoothCloseMenu();
                 } else if (mFlingDirection == FLING_RIGHT || canOpenMenu()) {
-                    Logger.i(TAG, "dx > 0==== smoothOpenMenu" + "/////" + mIsFling +
-                                  ",FLING_LEFT");
+                    Logger.i(TAG, "dx < 0==== smoothOpenMenu" + "/////" + mIsFling +
+                                  ",FlingDirection=" + mFlingDirection);
                     handled = smoothOpenMenu();
                 }
             } else {
                 if (mFlingDirection == FLING_LEFT ||
                     (mFlingDirection != FLING_RIGHT && canOpenMenu())) {
                     Logger.i(TAG, "dx < 0 ==== smoothOpenMenu" + "/////" + mIsFling +
-                                  ",FLING_LEFT");
+                                  ",FlingDirection="+mFlingDirection);
                     handled = smoothOpenMenu();
                 } else if (mFlingDirection == FLING_RIGHT || canCloseMenu()) {
                     Logger.i(TAG, "dx < 0 ==== smoothCloseMenu" + "/////" + mIsFling +
-                                  ",FLING_RIGHT");
+                                  ",FlingDirection="+mFlingDirection);
                     handled = smoothCloseMenu();
                 }
             }
@@ -771,22 +826,22 @@ public class SwipeMenuLayout extends ViewGroup {
                 if (mFlingDirection == FLING_RIGHT ||
                     (mFlingDirection != FLING_LEFT && canOpenMenu())) {
                     Logger.i(TAG, "dx > 0 ==== smoothOpenMenu" + "/////" + mIsFling +
-                                  ",FLING_RIGHT");
+                                  ",FlingDirection="+mFlingDirection);
                     handled = smoothOpenMenu();
                 } else if (mFlingDirection == FLING_LEFT || canCloseMenu()) {
                     Logger.i(TAG, "dx > 0 ==== smoothCloseMenu" + "/////" + mIsFling +
-                                  ",FLING_LEFT");
+                                  ",FlingDirection="+mFlingDirection);
                     handled = smoothCloseMenu();
                 }
             } else {
                 if (mFlingDirection == FLING_RIGHT ||
                     (mFlingDirection != FLING_LEFT && canCloseMenu())) {
                     Logger.i(TAG, "dx > 0==== smoothCloseMenu" + "/////" + mIsFling +
-                                  ",FLING_RIGHT");
+                                  ",FlingDirection="+mFlingDirection);
                     handled = smoothCloseMenu();
                 } else if (mFlingDirection == FLING_LEFT || canOpenMenu()) {
                     Logger.i(TAG, "dx > 0==== smoothOpenMenu" + "/////" + mIsFling +
-                                  ",FLING_LEFT");
+                                  ",FlingDirection="+mFlingDirection);
                     handled = smoothOpenMenu();
                 }
             }
@@ -1112,7 +1167,8 @@ public class SwipeMenuLayout extends ViewGroup {
 
     public boolean smoothCloseMenu() {
         if (mDetailState == STATE_DETAIL_CLOSED) {
-            Logger.i(TAG, "smoothCloseMenu break ,current state=" + STATE_DETAIL_CLOSED);
+            Logger.i(TAG, "smoothCloseMenu break ," +
+                          "current state=" + STATE_DETAIL_CLOSED);
             mState = STATE_IDLE;
             return false;
         }
@@ -1128,32 +1184,33 @@ public class SwipeMenuLayout extends ViewGroup {
                 DEFAULT_SCROLL_CLOSE_DURATION);
 
         postInvalidate();
-
         return true;
     }
 
     private class GestureListener extends GestureDetector.SimpleOnGestureListener {
 
-        private int absGravity;
-
         @Override
         public boolean onDown(MotionEvent e) {
             mIsFling = false;
             mFlingDirection = NO_FLING;
-            return super.onDown(e);
+            return mState != STATE_IDLE;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            return mState != STATE_IDLE;
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-
             Logger.i(TAG, "onFling_velocityX=" + velocityX + ",velocityY=" + velocityY);
-
             if (Math.abs(velocityX) >= mMinFlingVelocityX) {
                 Logger.i(TAG, "onFling------->" + mMinFlingVelocityX);
                 mIsFling = true;
                 mFlingDirection = velocityX < 0 ? FLING_LEFT : FLING_RIGHT;
+                return true;
             }
-            return super.onFling(e1, e2, velocityX, velocityY);
+            return false;
         }
 
     }

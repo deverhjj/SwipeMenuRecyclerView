@@ -1,6 +1,6 @@
 package com.jhj.library.internal;
 
-import android.support.v7.widget.RecyclerView;
+import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Created by jhj_Plus on 2016/4/11.
